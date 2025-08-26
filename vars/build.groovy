@@ -23,6 +23,9 @@ def call() {
 
                         cmake ..
                         cmake --build . -j \$(nproc)
+
+                        cd ../testing
+                        btest
                     """
                 }
             }
@@ -42,6 +45,9 @@ def call() {
 
                         cmake ..
                         cmake --build . -j \$(nproc)
+
+                        cd ../testing
+                        btest
                     """
                 }
             }
