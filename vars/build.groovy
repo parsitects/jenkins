@@ -1,5 +1,5 @@
 // Wrapper method so all CISAGOV repos can share single jenkinsfile build ruleset
-def build() {
+def call() {
     pipeline {
         agent {
             label {
