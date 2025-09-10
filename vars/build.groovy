@@ -80,7 +80,8 @@ def call() {
                             }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-v8-clang") {
+                            ws("v8-clang") {
+                                sh 'chmod -R 755 . || true'
                                 checkout scm
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-v8-clang'
@@ -108,7 +109,8 @@ def call() {
                             }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-v8-gcc") {
+                            ws("v8-gcc") {
+                                sh 'chmod -R 755 . || true'
                                 checkout scm
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-v8-gcc'
@@ -136,7 +138,8 @@ def call() {
                             }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-latest-clang") {
+                            ws("latest-clang") {
+                                sh 'chmod -R 755 . || true'
                                 checkout scm
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-latest-clang'
@@ -164,7 +167,8 @@ def call() {
                             }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-latest-gcc") {
+                            ws("latest-gcc") {
+                                sh 'chmod -R 755 . || true'
                                 checkout scm
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-latest-gcc'
@@ -200,7 +204,7 @@ def call() {
                             expression { env.BUILD_V8_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-v8-clang") {
+                            ws("v8-clang") {
                                 unstash 'build-v8-clang'
                                 runBtest()
                             }
@@ -218,7 +222,7 @@ def call() {
                             expression { env.BUILD_V8_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-v8-gcc") {
+                            ws("v8-gcc") {
                                 unstash 'build-v8-gcc'
                                 runBtest()
                             }
@@ -236,7 +240,7 @@ def call() {
                             expression { env.BUILD_LATEST_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-latest-clang") {
+                            ws("latest-clang") {
                                 unstash 'build-latest-clang'
                                 runBtest()
                             }
@@ -254,7 +258,7 @@ def call() {
                             expression { env.BUILD_LATEST_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("${env.JOB_NAME}-latest-gcc") {
+                            ws("latest-gcc") {
                                 unstash 'build-latest-gcc'
                                 runBtest()
                             }
