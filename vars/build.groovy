@@ -1,6 +1,11 @@
 // Reusable build function
-def buildProtcolParser() {
+def buildProtcolParser(buildDir) {
     sh """
+        # Copy source to isolated directory for this build
+        rm -rf ${buildDir}-src
+        cp -r . ${buildDir}-src
+        cd ${buildDir}-src
+        
         rm -rf build
         mkdir build
         cd build
@@ -10,9 +15,9 @@ def buildProtcolParser() {
 }
 
 // Reusable test function
-def runBtest() {
+def runBtest(buildDir) {
     sh """
-        cd testing
+        cd ${buildDir}-src/testing
         btest
     """
 }
@@ -80,8 +85,8 @@ def call() {
                             }
                         }
                         steps {
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-v8-clang'
+                            buildProtcolParser('build-v8-clang')
+                            stash includes: 'build-v8-clang-src/**', name: 'build-v8-clang'
                         }
                         post {
                             success {
@@ -105,8 +110,8 @@ def call() {
                             }
                         }
                         steps {
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-v8-gcc'
+                            buildProtcolParser('build-v8-gcc')
+                            stash includes: 'build-v8-gcc-src/**', name: 'build-v8-gcc'
                         }
                         post {
                             success {
@@ -130,8 +135,8 @@ def call() {
                             }
                         }
                         steps {
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-latest-clang'
+                            buildProtcolParser('build-latest-clang')
+                            stash includes: 'build-latest-clang-src/**', name: 'build-latest-clang'
                         }
                         post {
                             success {
@@ -155,8 +160,8 @@ def call() {
                             }
                         }
                         steps {
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-latest-gcc'
+                            buildProtcolParser('build-latest-gcc')
+                            stash includes: 'build-latest-gcc-src/**', name: 'build-latest-gcc'
                         }
                         post {
                             success {
@@ -189,7 +194,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-v8-clang'
-                            runBtest()
+                            runBtest('build-v8-clang')
                         }
                     }
                     stage('Test v8.0.0-gcc') {
@@ -205,7 +210,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-v8-gcc'
-                            runBtest()
+                            runBtest('build-v8-gcc')
                         }
                     }
                     stage('Test latest-clang') {
@@ -221,7 +226,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-latest-clang'
-                            runBtest()
+                            runBtest('build-latest-clang')
                         }
                     }
                     stage('Test latest-gcc') {
@@ -237,7 +242,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-latest-gcc'
-                            runBtest()
+                            runBtest('build-latest-gcc')
                         }
                     }
                 }
