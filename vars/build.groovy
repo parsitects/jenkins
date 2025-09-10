@@ -1,14 +1,17 @@
 // Reusable build function
 def buildProtcolParser() {
-    sh 'set -ex; rm -rf build'
-    sh 'set -ex; mkdir build'
-    sh 'set -ex; cd build; cmake ..'
-    sh 'set -ex; cd build; cmake --build . -j $(nproc)'
+    def status = sh(script: 'set -ex; rm -rf build; mkdir build; cd build; cmake ..; cmake --build . -j $(nproc)', returnStatus: true)
+    if (status != 0) {
+        error "Build failed with status ${status}"
+    }
 }
 
 // Reusable test function
 def runBtest() {
-    sh 'set -ex; cd testing; btest'
+    def status = sh(script: 'set -ex; cd testing && btest', returnStatus: true)
+    if (status != 0) {
+        error "Test failed with status ${status}"
+    }
 }
 
 // Wrapper method so all CISAGOV repos can share single jenkinsfile build ruleset
