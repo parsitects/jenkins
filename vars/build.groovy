@@ -81,8 +81,13 @@ def call() {
                         }
                         steps {
                             ws("v8-clang") {
+                                sh 'echo "=== v8-clang Workspace Debug ==="'
+                                sh 'echo "Workspace: $(pwd)"'
+                                sh 'echo "User: $(whoami)"'
+                                sh 'echo "Permissions: $(ls -la)"'
                                 sh 'chmod -R 755 . || true'
                                 checkout scm
+                                sh 'echo "After checkout: $(ls -la)"'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-v8-clang'
                             }
@@ -110,8 +115,13 @@ def call() {
                         }
                         steps {
                             ws("v8-gcc") {
+                                sh 'echo "=== v8-gcc Workspace Debug ==="'
+                                sh 'echo "Workspace: $(pwd)"'
+                                sh 'echo "User: $(whoami)"'
+                                sh 'echo "Permissions: $(ls -la)"'
                                 sh 'chmod -R 755 . || true'
                                 checkout scm
+                                sh 'echo "After checkout: $(ls -la)"'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-v8-gcc'
                             }
@@ -139,8 +149,13 @@ def call() {
                         }
                         steps {
                             ws("latest-clang") {
+                                sh 'echo "=== latest-clang Workspace Debug ==="'
+                                sh 'echo "Workspace: $(pwd)"'
+                                sh 'echo "User: $(whoami)"'
+                                sh 'echo "Permissions: $(ls -la)"'
                                 sh 'chmod -R 755 . || true'
                                 checkout scm
+                                sh 'echo "After checkout: $(ls -la)"'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-latest-clang'
                             }
@@ -168,8 +183,13 @@ def call() {
                         }
                         steps {
                             ws("latest-gcc") {
+                                sh 'echo "=== latest-gcc Workspace Debug ==="'
+                                sh 'echo "Workspace: $(pwd)"'
+                                sh 'echo "User: $(whoami)"'
+                                sh 'echo "Permissions: $(ls -la)"'
                                 sh 'chmod -R 755 . || true'
                                 checkout scm
+                                sh 'echo "After checkout: $(ls -la)"'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-latest-gcc'
                             }
