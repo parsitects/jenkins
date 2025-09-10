@@ -249,8 +249,11 @@ def call() {
         post {
             always {
                 script {
-                    // Clean up Docker containers and images if needed
-                    sh 'docker system prune -f --volumes || true'
+                    // Clean up containers and dangling resources but preserve tagged images for caching
+                    sh 'docker container prune -f || true'
+                    sh 'docker volume prune -f || true'
+                    sh 'docker network prune -f || true'
+                    sh 'docker image prune -f || true'
                 }
             }
         }
