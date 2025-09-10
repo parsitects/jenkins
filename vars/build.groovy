@@ -1,5 +1,5 @@
 // Reusable build function
-def buildZeek() {
+def buildProtcolParser() {
     sh """
         rm -rf build
         mkdir build
@@ -10,7 +10,7 @@ def buildZeek() {
 }
 
 // Reusable test function
-def testZeek() {
+def runBtest() {
     sh """
         cd testing
         btest
@@ -82,7 +82,7 @@ def call() {
                             }
                         }
                         steps {
-                            buildZeek()
+                            buildProtcolParser()
                             stash includes: 'build/**', name: 'build-v8-clang'
                         }
                         post {
@@ -107,7 +107,7 @@ def call() {
                             }
                         }
                         steps {
-                            buildZeek()
+                            buildProtcolParser()
                             stash includes: 'build/**', name: 'build-v8-gcc'
                         }
                         post {
@@ -132,7 +132,7 @@ def call() {
                             }
                         }
                         steps {
-                            buildZeek()
+                            buildProtcolParser()
                             stash includes: 'build/**', name: 'build-latest-clang'
                         }
                         post {
@@ -157,7 +157,7 @@ def call() {
                             }
                         }
                         steps {
-                            buildZeek()
+                            buildProtcolParser()
                             stash includes: 'build/**', name: 'build-latest-gcc'
                         }
                         post {
@@ -191,7 +191,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-v8-clang'
-                            testZeek()
+                            runBtest()
                         }
                     }
                     stage('Test v8.0.0-gcc') {
@@ -207,7 +207,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-v8-gcc'
-                            testZeek()
+                            runBtest()
                         }
                     }
                     stage('Test latest-clang') {
@@ -223,7 +223,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-latest-clang'
-                            testZeek()
+                            runBtest()
                         }
                     }
                     stage('Test latest-gcc') {
@@ -239,7 +239,7 @@ def call() {
                         }
                         steps {
                             unstash 'build-latest-gcc'
-                            testZeek()
+                            runBtest()
                         }
                     }
                 }
