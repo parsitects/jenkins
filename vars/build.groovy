@@ -32,8 +32,6 @@ def call() {
         }
         
         options {
-            // Enable Docker image caching and layer reuse
-            dockerImageCaching(true)
             skipDefaultCheckout()
         }
         
