@@ -1,20 +1,14 @@
 // Reusable build function
 def buildProtcolParser() {
-    sh """
-        rm -rf build
-        mkdir build
-        cd build
-        cmake ..
-        cmake --build . -j \$(nproc)
-    """
+    sh 'set -ex; rm -rf build'
+    sh 'set -ex; mkdir build'
+    sh 'set -ex; cd build; cmake ..'
+    sh 'set -ex; cd build; cmake --build . -j $(nproc)'
 }
 
 // Reusable test function
 def runBtest() {
-    sh """
-        cd testing
-        btest
-    """
+    sh 'set -ex; cd testing; btest'
 }
 
 // Wrapper method so all CISAGOV repos can share single jenkinsfile build ruleset
@@ -295,7 +289,7 @@ def call() {
                     sh 'docker container prune -f || true'
                     sh 'docker volume prune -f || true'
                     sh 'docker network prune -f || true'
-                    sh 'docker image prune -f || true'
+                    sh 'docker image prune -f --filter "label!=maintainer=mmguero" || true'
                 }
             }
         }
