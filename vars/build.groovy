@@ -120,9 +120,11 @@ def call() {
                             }
                         }
                         steps {
-                            unstash 'source-v8-clang'
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-v8-clang'
+                            ws("v8-clang") {
+                                unstash 'source-v8-clang'
+                                buildProtcolParser()
+                                stash includes: 'build/**', name: 'build-v8-clang'
+                            }
                         }
                         post {
                             success {
@@ -146,9 +148,11 @@ def call() {
                             }
                         }
                         steps {
-                            unstash 'source-v8-gcc'
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-v8-gcc'
+                            ws("v8-gcc") {
+                                unstash 'source-v8-gcc'
+                                buildProtcolParser()
+                                stash includes: 'build/**', name: 'build-v8-gcc'
+                            }
                         }
                         post {
                             success {
@@ -172,9 +176,11 @@ def call() {
                             }
                         }
                         steps {
-                            unstash 'source-latest-clang'
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-latest-clang'
+                            ws("latest-clang") {
+                                unstash 'source-latest-clang'
+                                buildProtcolParser()
+                                stash includes: 'build/**', name: 'build-latest-clang'
+                            }
                         }
                         post {
                             success {
@@ -198,9 +204,11 @@ def call() {
                             }
                         }
                         steps {
-                            unstash 'source-latest-gcc'
-                            buildProtcolParser()
-                            stash includes: 'build/**', name: 'build-latest-gcc'
+                            ws("latest-gcc") {
+                                unstash 'source-latest-gcc'
+                                buildProtcolParser()
+                                stash includes: 'build/**', name: 'build-latest-gcc'
+                            }
                         }
                         post {
                             success {
@@ -232,9 +240,11 @@ def call() {
                             expression { env.BUILD_V8_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            unstash 'source-v8-clang'
-                            unstash 'build-v8-clang'
-                            runBtest()
+                            ws("v8-clang") {
+                                unstash 'source-v8-clang'
+                                unstash 'build-v8-clang'
+                                runBtest()
+                            }
                         }
                     }
                     stage('Test v8.0.0-gcc') {
@@ -249,9 +259,11 @@ def call() {
                             expression { env.BUILD_V8_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            unstash 'source-v8-gcc'
-                            unstash 'build-v8-gcc'
-                            runBtest()
+                            ws("v8-gcc") {
+                                unstash 'source-v8-gcc'
+                                unstash 'build-v8-gcc'
+                                runBtest()
+                            }
                         }
                     }
                     stage('Test latest-clang') {
@@ -266,9 +278,11 @@ def call() {
                             expression { env.BUILD_LATEST_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            unstash 'source-latest-clang'
-                            unstash 'build-latest-clang'
-                            runBtest()
+                            ws("latest-clang") {
+                                unstash 'source-latest-clang'
+                                unstash 'build-latest-clang'
+                                runBtest()
+                            }
                         }
                     }
                     stage('Test latest-gcc') {
@@ -283,9 +297,11 @@ def call() {
                             expression { env.BUILD_LATEST_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            unstash 'source-latest-gcc'
-                            unstash 'build-latest-gcc'
-                            runBtest()
+                            ws("latest-gcc") {
+                                unstash 'source-latest-gcc'
+                                unstash 'build-latest-gcc'
+                                runBtest()
+                            }
                         }
                     }
                 }
