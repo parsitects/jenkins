@@ -296,7 +296,8 @@ def call() {
                     sh 'docker container prune -f || true'
                     sh 'docker volume prune -f || true'
                     sh 'docker network prune -f || true'
-                    sh 'docker image prune -f --filter "label!=maintainer=mmguero" || true'
+                    // Remove dangling image layers (e.g., old \"latest\" digests) while keeping tagged caches
+                    sh 'docker image prune -f || true'
                 }
             }
         }
