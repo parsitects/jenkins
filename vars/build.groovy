@@ -67,7 +67,7 @@ def call() {
                             label 'rhel9'
                         }
                         steps {
-                            ws("v8-clang") {
+                            dir("v8-clang") {
                                 checkout scm
                                 stash includes: '**', name: 'source-v8-clang'
                             }
@@ -78,7 +78,7 @@ def call() {
                             label 'rhel9'
                         }
                         steps {
-                            ws("v8-gcc") {
+                            dir("v8-gcc") {
                                 checkout scm
                                 stash includes: '**', name: 'source-v8-gcc'
                             }
@@ -89,7 +89,7 @@ def call() {
                             label 'rhel9'
                         }
                         steps {
-                            ws("latest-clang") {
+                            dir("latest-clang") {
                                 checkout scm
                                 stash includes: '**', name: 'source-latest-clang'
                             }
@@ -100,7 +100,7 @@ def call() {
                             label 'rhel9'
                         }
                         steps {
-                            ws("latest-gcc") {
+                            dir("latest-gcc") {
                                 checkout scm
                                 stash includes: '**', name: 'source-latest-gcc'
                             }
@@ -120,7 +120,7 @@ def call() {
                             }
                         }
                         steps {
-                            ws("v8-clang") {
+                            dir("v8-clang") {
                                 unstash 'source-v8-clang'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-v8-clang'
@@ -148,7 +148,7 @@ def call() {
                             }
                         }
                         steps {
-                            ws("v8-gcc") {
+                            dir("v8-gcc") {
                                 unstash 'source-v8-gcc'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-v8-gcc'
@@ -176,7 +176,7 @@ def call() {
                             }
                         }
                         steps {
-                            ws("latest-clang") {
+                            dir("latest-clang") {
                                 unstash 'source-latest-clang'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-latest-clang'
@@ -204,7 +204,7 @@ def call() {
                             }
                         }
                         steps {
-                            ws("latest-gcc") {
+                            dir("latest-gcc") {
                                 unstash 'source-latest-gcc'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-latest-gcc'
@@ -240,7 +240,7 @@ def call() {
                             expression { env.BUILD_V8_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("v8-clang") {
+                            dir("v8-clang") {
                                 unstash 'source-v8-clang'
                                 unstash 'build-v8-clang'
                                 runBtest()
@@ -259,7 +259,7 @@ def call() {
                             expression { env.BUILD_V8_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("v8-gcc") {
+                            dir("v8-gcc") {
                                 unstash 'source-v8-gcc'
                                 unstash 'build-v8-gcc'
                                 runBtest()
@@ -278,7 +278,7 @@ def call() {
                             expression { env.BUILD_LATEST_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("latest-clang") {
+                            dir("latest-clang") {
                                 unstash 'source-latest-clang'
                                 unstash 'build-latest-clang'
                                 runBtest()
@@ -297,7 +297,7 @@ def call() {
                             expression { env.BUILD_LATEST_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("latest-gcc") {
+                            dir("latest-gcc") {
                                 unstash 'source-latest-gcc'
                                 unstash 'build-latest-gcc'
                                 runBtest()
