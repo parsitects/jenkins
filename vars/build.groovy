@@ -38,12 +38,10 @@ def call() {
         }
 
         stages {
-            stage('Pre-pull Docker Images & Checkout Source') {
+            stage('Pull Docker Images') {
                 parallel {
                     stage('Pull v8.0.0 Images') {
-                        agent {
-                            label 'rhel9'
-                        }
+                        agent { label 'rhel9' }
                         steps {
                             script {
                                 sh 'docker pull ghcr.io/mmguero/zeek:v8.0.0-clang'
@@ -52,9 +50,7 @@ def call() {
                         }
                     }
                     stage('Pull Latest Images') {
-                        agent {
-                            label 'rhel9'
-                        }
+                        agent { label 'rhel9' }
                         steps {
                             script {
                                 sh 'docker pull ghcr.io/mmguero/zeek:latest-clang'
@@ -62,10 +58,13 @@ def call() {
                             }
                         }
                     }
+                }
+            }
+
+            stage('Checkout Source') {
+                parallel {
                     stage('Checkout v8-clang') {
-                        agent {
-                            label 'rhel9'
-                        }
+                        agent { label 'rhel9' }
                         steps {
                             dir("v8-clang") {
                                 checkout scm
@@ -74,9 +73,7 @@ def call() {
                         }
                     }
                     stage('Checkout v8-gcc') {
-                        agent {
-                            label 'rhel9'
-                        }
+                        agent { label 'rhel9' }
                         steps {
                             dir("v8-gcc") {
                                 checkout scm
@@ -85,9 +82,7 @@ def call() {
                         }
                     }
                     stage('Checkout latest-clang') {
-                        agent {
-                            label 'rhel9'
-                        }
+                        agent { label 'rhel9' }
                         steps {
                             dir("latest-clang") {
                                 checkout scm
@@ -96,9 +91,7 @@ def call() {
                         }
                     }
                     stage('Checkout latest-gcc') {
-                        agent {
-                            label 'rhel9'
-                        }
+                        agent { label 'rhel9' }
                         steps {
                             dir("latest-gcc") {
                                 checkout scm
