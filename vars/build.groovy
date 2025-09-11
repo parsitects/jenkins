@@ -1,17 +1,22 @@
 // Reusable build function
 def buildProtcolParser() {
-    def status = sh(script: 'set -ex; rm -rf build; mkdir build; cd build; cmake ..; cmake --build . -j $(nproc)', returnStatus: true)
-    if (status != 0) {
-        error "Build failed with status ${status}"
-    }
+    sh '''
+        set -ex
+        rm -rf build
+        mkdir build
+        cd build
+        cmake ..
+        cmake --build . -j $(nproc)
+    '''
 }
 
 // Reusable test function
 def runBtest() {
-    def status = sh(script: 'set -ex; cd testing && btest', returnStatus: true)
-    if (status != 0) {
-        error "Test failed with status ${status}"
-    }
+    sh '''
+        set -ex
+        cd testing
+        btest
+    '''
 }
 
 // Wrapper method so all CISAGOV repos can share single jenkinsfile build ruleset
@@ -42,9 +47,6 @@ def call() {
             stage('Pre-pull Docker Images') {
                 parallel {
                     stage('Pull v8.0.0 Images') {
-                        agent {
-                            label 'rhel9'
-                        }
                         steps {
                             script {
                                 sh 'docker pull ghcr.io/mmguero/zeek:v8.0.0-clang'
@@ -53,9 +55,6 @@ def call() {
                         }
                     }
                     stage('Pull Latest Images') {
-                        agent {
-                            label 'rhel9'
-                        }
                         steps {
                             script {
                                 sh 'docker pull ghcr.io/mmguero/zeek:latest-clang'
@@ -69,24 +68,21 @@ def call() {
             stage('Build Matrix') {
                 parallel {
                     stage('Build v8.0.0-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         steps {
-                            ws("v8-clang") {
-                                sh 'echo "=== v8-clang Workspace Debug ==="'
-                                sh 'echo "Workspace: $(pwd)"'
-                                sh 'echo "User: $(whoami)"'
-                                sh 'echo "Permissions: $(ls -la)"'
-                                sh 'chmod -R 755 . || true'
-                                checkout scm
-                                sh 'echo "After checkout: $(ls -la)"'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-v8-clang'
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:v8.0.0-clang').inside('--user root --entrypoint=') {
+                                    ws("v8-clang") {
+                                        sh 'echo "=== v8-clang Workspace Debug ==="'
+                                        sh 'echo "Workspace: $(pwd)"'
+                                        sh 'echo "User: $(whoami)"'
+                                        sh 'echo "Permissions: $(ls -la)"'
+                                        sh 'chmod -R 755 . || true'
+                                        checkout scm
+                                        sh 'echo "After checkout: $(ls -la)"'
+                                        buildProtcolParser()
+                                        stash includes: 'build/**', name: 'build-v8-clang'
+                                    }
+                                }
                             }
                         }
                         post {
@@ -103,24 +99,21 @@ def call() {
                         }
                     }
                     stage('Build v8.0.0-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         steps {
-                            ws("v8-gcc") {
-                                sh 'echo "=== v8-gcc Workspace Debug ==="'
-                                sh 'echo "Workspace: $(pwd)"'
-                                sh 'echo "User: $(whoami)"'
-                                sh 'echo "Permissions: $(ls -la)"'
-                                sh 'chmod -R 755 . || true'
-                                checkout scm
-                                sh 'echo "After checkout: $(ls -la)"'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-v8-gcc'
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:v8.0.0-gcc').inside('--user root --entrypoint=') {
+                                    ws("v8-gcc") {
+                                        sh 'echo "=== v8-gcc Workspace Debug ==="'
+                                        sh 'echo "Workspace: $(pwd)"'
+                                        sh 'echo "User: $(whoami)"'
+                                        sh 'echo "Permissions: $(ls -la)"'
+                                        sh 'chmod -R 755 . || true'
+                                        checkout scm
+                                        sh 'echo "After checkout: $(ls -la)"'
+                                        buildProtcolParser()
+                                        stash includes: 'build/**', name: 'build-v8-gcc'
+                                    }
+                                }
                             }
                         }
                         post {
@@ -137,24 +130,21 @@ def call() {
                         }
                     }
                     stage('Build latest-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         steps {
-                            ws("latest-clang") {
-                                sh 'echo "=== latest-clang Workspace Debug ==="'
-                                sh 'echo "Workspace: $(pwd)"'
-                                sh 'echo "User: $(whoami)"'
-                                sh 'echo "Permissions: $(ls -la)"'
-                                sh 'chmod -R 755 . || true'
-                                checkout scm
-                                sh 'echo "After checkout: $(ls -la)"'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-latest-clang'
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:latest-clang').inside('--user root --entrypoint=') {
+                                    ws("latest-clang") {
+                                        sh 'echo "=== latest-clang Workspace Debug ==="'
+                                        sh 'echo "Workspace: $(pwd)"'
+                                        sh 'echo "User: $(whoami)"'
+                                        sh 'echo "Permissions: $(ls -la)"'
+                                        sh 'chmod -R 755 . || true'
+                                        checkout scm
+                                        sh 'echo "After checkout: $(ls -la)"'
+                                        buildProtcolParser()
+                                        stash includes: 'build/**', name: 'build-latest-clang'
+                                    }
+                                }
                             }
                         }
                         post {
@@ -171,24 +161,21 @@ def call() {
                         }
                     }
                     stage('Build latest-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         steps {
-                            ws("latest-gcc") {
-                                sh 'echo "=== latest-gcc Workspace Debug ==="'
-                                sh 'echo "Workspace: $(pwd)"'
-                                sh 'echo "User: $(whoami)"'
-                                sh 'echo "Permissions: $(ls -la)"'
-                                sh 'chmod -R 755 . || true'
-                                checkout scm
-                                sh 'echo "After checkout: $(ls -la)"'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-latest-gcc'
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:latest-gcc').inside('--user root --entrypoint=') {
+                                    ws("latest-gcc") {
+                                        sh 'echo "=== latest-gcc Workspace Debug ==="'
+                                        sh 'echo "Workspace: $(pwd)"'
+                                        sh 'echo "User: $(whoami)"'
+                                        sh 'echo "Permissions: $(ls -la)"'
+                                        sh 'chmod -R 755 . || true'
+                                        checkout scm
+                                        sh 'echo "After checkout: $(ls -la)"'
+                                        buildProtcolParser()
+                                        stash includes: 'build/**', name: 'build-latest-gcc'
+                                    }
+                                }
                             }
                         }
                         post {
@@ -210,74 +197,62 @@ def call() {
             stage('Test Matrix') {
                 parallel {
                     stage('Test v8.0.0-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         when {
                             expression { env.BUILD_V8_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("v8-clang") {
-                                unstash 'build-v8-clang'
-                                runBtest()
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:v8.0.0-clang').inside('--user root --entrypoint=') {
+                                    ws("v8-clang") {
+                                        unstash 'build-v8-clang'
+                                        runBtest()
+                                    }
+                                }
                             }
                         }
                     }
                     stage('Test v8.0.0-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         when {
                             expression { env.BUILD_V8_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("v8-gcc") {
-                                unstash 'build-v8-gcc'
-                                runBtest()
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:v8.0.0-gcc').inside('--user root --entrypoint=') {
+                                    ws("v8-gcc") {
+                                        unstash 'build-v8-gcc'
+                                        runBtest()
+                                    }
+                                }
                             }
                         }
                     }
                     stage('Test latest-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         when {
                             expression { env.BUILD_LATEST_CLANG_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("latest-clang") {
-                                unstash 'build-latest-clang'
-                                runBtest()
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:latest-clang').inside('--user root --entrypoint=') {
+                                    ws("latest-clang") {
+                                        unstash 'build-latest-clang'
+                                        runBtest()
+                                    }
+                                }
                             }
                         }
                     }
                     stage('Test latest-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
                         when {
                             expression { env.BUILD_LATEST_GCC_SUCCESS == 'true' }
                         }
                         steps {
-                            ws("latest-gcc") {
-                                unstash 'build-latest-gcc'
-                                runBtest()
+                            script {
+                                docker.image('ghcr.io/mmguero/zeek:latest-gcc').inside('--user root --entrypoint=') {
+                                    ws("latest-gcc") {
+                                        unstash 'build-latest-gcc'
+                                        runBtest()
+                                    }
+                                }
                             }
                         }
                     }
@@ -298,4 +273,3 @@ def call() {
         }
     }
 }
-
