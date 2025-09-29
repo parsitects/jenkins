@@ -2,11 +2,19 @@
 def buildProtcolParser() {
     sh """
         set -ex
-        rm -rf build
-        mkdir build
-        cd build
-        cmake ..
-        cmake --build . -j \$(nproc)
+        if [ -f ./configure ]; then
+            # BINPAC-based repo
+            rm -rf build
+            ./configure
+            cd build && make
+        else
+            # SPICY-based repo
+            rm -rf build
+            mkdir build
+            cd build
+            cmake ..
+            cmake --build . -j \$(nproc)
+        fi
     """
 }
 
