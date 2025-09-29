@@ -6,7 +6,9 @@ def buildProtcolParser() {
             # BINPAC-based repo
             rm -rf build
             ./configure
-            cd build && make
+            cd build
+            make
+            cd ..
         else
             # SPICY-based repo
             rm -rf build
