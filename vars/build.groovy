@@ -1,47 +1,27 @@
-// Reusable build function
-def buildProtcolParser() {
+def buildAndTestProtocolParser() {
     sh """
         set -ex
+        rm -rf build
         if [ -f ./configure ]; then
-            # BINPAC-based repo
-            rm -rf build
             ./configure
             cd build
             make
-            cd ..
         else
-            # SPICY-based repo
-            rm -rf build
             mkdir build
             cd build
             cmake ..
             cmake --build . -j \$(nproc)
         fi
-    """
-}
-
-// Reusable test function
-def runBtest() {
-    sh """
-        set -ex
-        cd testing
+        cd ../testing
         btest
     """
 }
 
-// Wrapper method so all CISAGOV repos can share single jenkinsfile build ruleset
 def call() {
     pipeline {
         agent {
             label 'rhel9'
         }
-        
-        // environment {
-        //     BUILD_V8_CLANG_SUCCESS = 'false'
-        //     BUILD_V8_GCC_SUCCESS = 'false'
-        //     BUILD_LATEST_CLANG_SUCCESS = 'false'
-        //     BUILD_LATEST_GCC_SUCCESS = 'false'
-        // }
 
         options {
             skipDefaultCheckout()
@@ -69,46 +49,9 @@ def call() {
                 }
             }
 
-            stage('Checkout Source') {
+            stage('Build and Test Matrix') {
                 parallel {
-                    stage('Checkout v8-clang') {
-                        steps {
-                            dir("v8-clang") {
-                                checkout scm
-                                stash includes: '**', name: 'source-v8-clang'
-                            }
-                        }
-                    }
-                    stage('Checkout v8-gcc') {
-                        steps {
-                            dir("v8-gcc") {
-                                checkout scm
-                                stash includes: '**', name: 'source-v8-gcc'
-                            }
-                        }
-                    }
-                    stage('Checkout latest-clang') {
-                        steps {
-                            dir("latest-clang") {
-                                checkout scm
-                                stash includes: '**', name: 'source-latest-clang'
-                            }
-                        }
-                    }
-                    stage('Checkout latest-gcc') {
-                        steps {
-                            dir("latest-gcc") {
-                                checkout scm
-                                stash includes: '**', name: 'source-latest-gcc'
-                            }
-                        }
-                    }
-                }
-            }
-            
-            stage('Build Matrix') {
-                parallel {
-                    stage('Build v8.0.0-clang') {
+                    stage('v8.0.0-clang') {
                         agent {
                             docker { 
                                 image 'ghcr.io/mmguero/zeek:v8.0.0-clang'
@@ -118,13 +61,12 @@ def call() {
                         }
                         steps {
                             dir("v8-clang") {
-                                unstash 'source-v8-clang'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-v8-clang'
+                                checkout scm
+                                buildAndTestProtocolParser()
                             }
                         }
                     }
-                    stage('Build v8.0.0-gcc') {
+                    stage('v8.0.0-gcc') {
                         agent {
                             docker { 
                                 image 'ghcr.io/mmguero/zeek:v8.0.0-gcc'
@@ -134,13 +76,12 @@ def call() {
                         }
                         steps {
                             dir("v8-gcc") {
-                                unstash 'source-v8-gcc'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-v8-gcc'
+                                checkout scm
+                                buildAndTestProtocolParser()
                             }
                         }
                     }
-                    stage('Build latest-clang') {
+                    stage('latest-clang') {
                         agent {
                             docker { 
                                 image 'ghcr.io/mmguero/zeek:latest-clang'
@@ -150,13 +91,12 @@ def call() {
                         }
                         steps {
                             dir("latest-clang") {
-                                unstash 'source-latest-clang'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-latest-clang'
+                                checkout scm
+                                buildAndTestProtocolParser()
                             }
                         }
                     }
-                    stage('Build latest-gcc') {
+                    stage('latest-gcc') {
                         agent {
                             docker { 
                                 image 'ghcr.io/mmguero/zeek:latest-gcc'
@@ -166,78 +106,8 @@ def call() {
                         }
                         steps {
                             dir("latest-gcc") {
-                                unstash 'source-latest-gcc'
-                                buildProtcolParser()
-                                stash includes: 'build/**', name: 'build-latest-gcc'
-                            }
-                        }
-                    }
-                }
-            }
-            
-            stage('Test Matrix') {
-                parallel {
-                    stage('Test v8.0.0-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
-                        steps {
-                            dir("v8-clang") {
-                                unstash 'source-v8-clang'
-                                unstash 'build-v8-clang'
-                                runBtest()
-                            }
-                        }
-                    }
-                    stage('Test v8.0.0-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
-                        steps {
-                            dir("v8-gcc") {
-                                unstash 'source-v8-gcc'
-                                unstash 'build-v8-gcc'
-                                runBtest()
-                            }
-                        }
-                    }
-                    stage('Test latest-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
-                        steps {
-                            dir("latest-clang") {
-                                unstash 'source-latest-clang'
-                                unstash 'build-latest-clang'
-                                runBtest()
-                            }
-                        }
-                    }
-                    stage('Test latest-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
-                        steps {
-                            dir("latest-gcc") {
-                                unstash 'source-latest-gcc'
-                                unstash 'build-latest-gcc'
-                                runBtest()
+                                checkout scm
+                                buildAndTestProtocolParser()
                             }
                         }
                     }
@@ -248,11 +118,9 @@ def call() {
         post {
             always {
                 script {
-                    // Clean up containers and dangling resources but preserve tagged images for caching
                     sh 'docker container prune -f || true'
                     sh 'docker volume prune -f || true'
                     sh 'docker network prune -f || true'
-                    // Remove dangling image layers (e.g., old \"latest\" digests) while keeping tagged caches
                     sh 'docker image prune -f || true'
                 }
             }
