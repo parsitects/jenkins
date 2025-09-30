@@ -10,7 +10,7 @@ def buildAndTestProtocolParser() {
             mkdir build
             cd build
             cmake ..
-            cmake --build . -j \$(nproc)
+            cmake --build . -j 2
         fi
         cd ../testing
         btest
