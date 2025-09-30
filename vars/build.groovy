@@ -36,12 +36,12 @@ def call() {
             label 'rhel9'
         }
         
-        environment {
-            BUILD_V8_CLANG_SUCCESS = 'false'
-            BUILD_V8_GCC_SUCCESS = 'false'
-            BUILD_LATEST_CLANG_SUCCESS = 'false'
-            BUILD_LATEST_GCC_SUCCESS = 'false'
-        }
+        // environment {
+        //     BUILD_V8_CLANG_SUCCESS = 'false'
+        //     BUILD_V8_GCC_SUCCESS = 'false'
+        //     BUILD_LATEST_CLANG_SUCCESS = 'false'
+        //     BUILD_LATEST_GCC_SUCCESS = 'false'
+        // }
 
         options {
             skipDefaultCheckout()
@@ -51,7 +51,6 @@ def call() {
             stage('Pull Docker Images') {
                 parallel {
                     stage('Pull v8.0.0 Images') {
-                        agent { label 'rhel9' }
                         steps {
                             script {
                                 sh 'docker pull ghcr.io/mmguero/zeek:v8.0.0-clang'
@@ -60,7 +59,6 @@ def call() {
                         }
                     }
                     stage('Pull Latest Images') {
-                        agent { label 'rhel9' }
                         steps {
                             script {
                                 sh 'docker pull ghcr.io/mmguero/zeek:latest-clang'
@@ -74,7 +72,6 @@ def call() {
             stage('Checkout Source') {
                 parallel {
                     stage('Checkout v8-clang') {
-                        agent { label 'rhel9' }
                         steps {
                             dir("v8-clang") {
                                 checkout scm
@@ -83,7 +80,6 @@ def call() {
                         }
                     }
                     stage('Checkout v8-gcc') {
-                        agent { label 'rhel9' }
                         steps {
                             dir("v8-gcc") {
                                 checkout scm
@@ -92,7 +88,6 @@ def call() {
                         }
                     }
                     stage('Checkout latest-clang') {
-                        agent { label 'rhel9' }
                         steps {
                             dir("latest-clang") {
                                 checkout scm
@@ -101,7 +96,6 @@ def call() {
                         }
                     }
                     stage('Checkout latest-gcc') {
-                        agent { label 'rhel9' }
                         steps {
                             dir("latest-gcc") {
                                 checkout scm
@@ -129,18 +123,6 @@ def call() {
                                 stash includes: 'build/**', name: 'build-v8-clang'
                             }
                         }
-                        post {
-                            success {
-                                script {
-                                    env.BUILD_V8_CLANG_SUCCESS = 'true'
-                                }
-                            }
-                            failure {
-                                script {
-                                    env.BUILD_V8_CLANG_SUCCESS = 'false'
-                                }
-                            }
-                        }
                     }
                     stage('Build v8.0.0-gcc') {
                         agent {
@@ -155,18 +137,6 @@ def call() {
                                 unstash 'source-v8-gcc'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-v8-gcc'
-                            }
-                        }
-                        post {
-                            success {
-                                script {
-                                    env.BUILD_V8_GCC_SUCCESS = 'true'
-                                }
-                            }
-                            failure {
-                                script {
-                                    env.BUILD_V8_GCC_SUCCESS = 'false'
-                                }
                             }
                         }
                     }
@@ -185,18 +155,6 @@ def call() {
                                 stash includes: 'build/**', name: 'build-latest-clang'
                             }
                         }
-                        post {
-                            success {
-                                script {
-                                    env.BUILD_LATEST_CLANG_SUCCESS = 'true'
-                                }
-                            }
-                            failure {
-                                script {
-                                    env.BUILD_LATEST_CLANG_SUCCESS = 'false'
-                                }
-                            }
-                        }
                     }
                     stage('Build latest-gcc') {
                         agent {
@@ -211,18 +169,6 @@ def call() {
                                 unstash 'source-latest-gcc'
                                 buildProtcolParser()
                                 stash includes: 'build/**', name: 'build-latest-gcc'
-                            }
-                        }
-                        post {
-                            success {
-                                script {
-                                    env.BUILD_LATEST_GCC_SUCCESS = 'true'
-                                }
-                            }
-                            failure {
-                                script {
-                                    env.BUILD_LATEST_GCC_SUCCESS = 'false'
-                                }
                             }
                         }
                     }
