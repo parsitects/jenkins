@@ -28,21 +28,55 @@ def call() {
         }
 
         stages {
-            stage('Pull Docker Images') {
-                parallel {
-                    stage('Pull v8.0.0 Images') {
-                        steps {
-                            script {
-                                sh 'docker pull ghcr.io/mmguero/zeek:v8.0.0-clang'
-                                sh 'docker pull ghcr.io/mmguero/zeek:v8.0.0-gcc'
+            stage('Discover Versions') {
+                steps {
+                    script {
+                        withCredentials([string(credentialsId: 'jjrush-gh-pat', variable: 'CR_PAT')]) {
+                            def versionsOutput = sh(
+                                script: """
+                                    curl -s -H "Accept: application/vnd.github+json" \
+                                        -H "Authorization: Bearer \$CR_PAT" \
+                                        https://api.github.com/users/mmguero/packages/container/zeek/versions | \
+                                    jq -r '.[].metadata.container.tags[]' | \
+                                    grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | \
+                                    sed 's/^v//' | \
+                                    sort -V -u | \
+                                    {
+                                        readarray -t VERS;
+                                        M=\$(printf '%s\\n' "\${VERS[@]}" | awk -F. '{print \$1}' | sort -n | tail -1);
+                                        for B in "\$M" \$((M-1)); do
+                                            printf '%s\\n' "\${VERS[@]}" | grep -E "^\${B}\\.0\\.[0-9]+\$" | sort -V | tail -1;
+                                        done | sed '/^\$/d';
+                                    }
+                                """,
+                                returnStdout: true
+                            ).trim()
+                            
+                            def ltsVersions = versionsOutput ? versionsOutput.split('\n').findAll { it } : []
+                            
+                            if (ltsVersions.size() < 2) {
+                                error("Expected 2 LTS versions but got: ${ltsVersions}")
                             }
+                            
+                            // Add 'latest' to the beginning
+                            def allVersions = ['latest'] + ltsVersions
+                            env.ZEEK_VERSIONS = allVersions.join(',')
+                            echo "Testing against Zeek versions: ${env.ZEEK_VERSIONS}"
                         }
                     }
-                    stage('Pull Latest Images') {
-                        steps {
-                            script {
-                                sh 'docker pull ghcr.io/mmguero/zeek:latest-clang'
-                                sh 'docker pull ghcr.io/mmguero/zeek:latest-gcc'
+                }
+            }
+
+            stage('Pull Docker Images') {
+                steps {
+                    script {
+                        def versions = env.ZEEK_VERSIONS.split(',')
+                        def compilers = ['clang', 'gcc']
+                        
+                        versions.each { version ->
+                            compilers.each { compiler ->
+                                def tag = version == 'latest' ? "${version}-${compiler}" : "v${version}-${compiler}"
+                                sh "docker pull ghcr.io/mmguero/zeek:${tag}"
                             }
                         }
                     }
@@ -50,70 +84,32 @@ def call() {
             }
 
             stage('Build and Test Matrix') {
-                parallel {
-                    stage('v8.0.0-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
+                steps {
+                    script {
+                        def versions = env.ZEEK_VERSIONS.split(',')
+                        def compilers = ['clang', 'gcc']
+                        def parallelStages = [:]
+                        
+                        versions.each { version ->
+                            compilers.each { compiler ->
+                                def tag = version == 'latest' ? "${version}-${compiler}" : "v${version}-${compiler}"
+                                def variant = "${version}-${compiler}"
+                                
+                                parallelStages[variant] = {
+                                    docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
+                                        dir(variant) {
+                                            checkout scm
+                                            buildAndTestProtocolParser()
+                                        }
+                                    }
+                                }
                             }
                         }
-                        steps {
-                            dir("v8-clang") {
-                                checkout scm
-                                buildAndTestProtocolParser()
-                            }
-                        }
-                    }
-                    stage('v8.0.0-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:v8.0.0-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
-                        steps {
-                            dir("v8-gcc") {
-                                checkout scm
-                                buildAndTestProtocolParser()
-                            }
-                        }
-                    }
-                    stage('latest-clang') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-clang'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
-                        steps {
-                            dir("latest-clang") {
-                                checkout scm
-                                buildAndTestProtocolParser()
-                            }
-                        }
-                    }
-                    stage('latest-gcc') {
-                        agent {
-                            docker { 
-                                image 'ghcr.io/mmguero/zeek:latest-gcc'
-                                args '--user root --entrypoint='
-                                reuseNode true
-                            }
-                        }
-                        steps {
-                            dir("latest-gcc") {
-                                checkout scm
-                                buildAndTestProtocolParser()
-                            }
-                        }
+                        
+                        parallel parallelStages
                     }
                 }
             }
-        }
         
         post {
             always {
