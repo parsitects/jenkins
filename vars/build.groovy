@@ -88,25 +88,28 @@ def call() {
                     script {
                         def versions = env.ZEEK_VERSIONS.split(',')
                         def compilers = ['clang', 'gcc']
-                        def parallelStages = [:]
                         
                         versions.each { version ->
-                            compilers.each { compiler ->
-                                def tag = version == 'latest' ? "${version}-${compiler}" : "v${version}-${compiler}"
-                                def variant = "${version}-${compiler}"
+                            stage("Test Zeek ${version}") {
+                                def compilerStages = [:]
                                 
-                                parallelStages[variant] = {
-                                    docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
-                                        dir(variant) {
-                                            checkout scm
-                                            buildAndTestProtocolParser()
+                                compilers.each { compiler ->
+                                    def tag = version == 'latest' ? "${version}-${compiler}" : "v${version}-${compiler}"
+                                    def variant = "${version}-${compiler}"
+                                    
+                                    compilerStages[compiler] = {
+                                        docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
+                                            dir(variant) {
+                                                checkout scm
+                                                buildAndTestProtocolParser()
+                                            }
                                         }
                                     }
                                 }
+                                
+                                parallel compilerStages
                             }
                         }
-                        
-                        parallel parallelStages
                     }
                 }
             }
