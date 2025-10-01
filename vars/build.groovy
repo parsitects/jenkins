@@ -10,19 +10,20 @@ def buildAndTestProtocolParser() {
                 ./configure
                 cd build
                 make
+                cd ..
             ;;
             SPICY)
                 mkdir -p build
                 cd build
                 cmake ..
                 cmake --build . -j 2
+                cd ..
                 ;;
             ZEEKONLY)
                 # No build step needed for Zeek-only parsers - just run btest
                 ;;
             esac
 
-            cd ..
             cd testing
             btest -d
     """
