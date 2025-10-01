@@ -1,7 +1,7 @@
 def buildAndTestProtocolParser() {
     sh """
         set -ex
-        rm -rf build
+        rm -rf build testing/.tmp testing/.btest.failed.dat
         if [ -f ./configure ]; then
             ./configure
             cd build
@@ -13,7 +13,7 @@ def buildAndTestProtocolParser() {
             cmake --build . -j 2
         fi
         cd ../testing
-        btest
+        btest -d
     """
 }
 
