@@ -132,7 +132,27 @@ def call() {
                     sh 'docker container prune -f || true'
                     sh 'docker volume prune -f || true'
                     sh 'docker network prune -f || true'
-                    sh 'docker image prune -f || true'
+
+                    // Clean up old Zeek images that aren't in our current LTS set
+                    sh """
+                        # Build the list of images to keep (with both compilers)
+                        KEEP_IMAGES=""
+                        for version in \$(echo '${env.ZEEK_VERSIONS}' | tr ',' ' '); do
+                            if [ "\$version" = "latest" ]; then
+                                KEEP_IMAGES="\$KEEP_IMAGES ghcr.io/mmguero/zeek:latest-clang ghcr.io/mmguero/zeek:latest-gcc"
+                            else
+                                KEEP_IMAGES="\$KEEP_IMAGES ghcr.io/mmguero/zeek:v\${version}-clang ghcr.io/mmguero/zeek:v\${version}-gcc"
+                            fi
+                        done
+
+                        # Remove all mmguero/zeek images except the ones we want to keep
+                        docker images ghcr.io/mmguero/zeek --format "{{.Repository}}:{{.Tag}}" | while read image; do
+                            if ! echo "\$KEEP_IMAGES" | grep -q "\$image"; then
+                                echo "Removing old image: \$image"
+                                docker rmi "\$image" || true
+                            fi
+                        done
+                    """
                 }
             }
         }
