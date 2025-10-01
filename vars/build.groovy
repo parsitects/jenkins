@@ -8,12 +8,12 @@ def buildAndTestProtocolParser() {
         case "\$REPOTYPE" in
             BINPAC)
                 ./configure
-                pushd build
+                cd build
                 make
             ;;
             SPICY)
                 mkdir -p build
-                pushd build
+                cd build
                 cmake ..
                 cmake --build . -j 2
                 ;;
@@ -22,7 +22,7 @@ def buildAndTestProtocolParser() {
                 ;;
             esac
 
-            popd
+            cd ..
             cd testing
             btest -d
     """
