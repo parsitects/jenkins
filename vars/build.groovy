@@ -2,18 +2,29 @@ def buildAndTestProtocolParser() {
     sh """
         set -ex
         rm -rf build testing/.tmp testing/.btest.failed.dat
-        if [ -f ./configure ]; then
-            ./configure
-            cd build
-            make
-        else
-            mkdir build
-            cd build
-            cmake ..
-            cmake --build . -j 2
-        fi
-        cd ../testing
-        btest -d
+
+        REPOTYPE=\$(cat .repotype)
+
+        case "\$REPOTYPE" in
+            BINPAC)
+                ./configure
+                pushd build
+                make
+            ;;
+            SPICY)
+                mkdir -p build
+                pushd build
+                cmake ..
+                cmake --build . -j 2
+                ;;
+            ZEEKONLY)
+                # No build step needed for Zeek-only parsers - just run btest
+                ;;
+            esac
+
+            popd
+            cd testing
+            btest -d
     """
 }
 
@@ -90,7 +101,7 @@ def call() {
                         def compilers = ['clang', 'gcc']
                         
                         versions.each { version ->
-                            stage("Test Zeek ${version}") {
+                            stage("Build & Test Zeek ${version}") {
                                 def compilerStages = [:]
                                 
                                 compilers.each { compiler ->
