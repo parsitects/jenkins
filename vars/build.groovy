@@ -153,6 +153,9 @@ def call() {
                                 docker rmi "\$image" || true
                             fi
                         done
+
+                        # and finally remove any dangling images
+                        docker image prune -f
                     """
                 }
             }
