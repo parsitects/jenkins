@@ -162,7 +162,16 @@ def call() {
         post {
             always {
                 // Clean up Jenkins job directories
+                echo "Cleaning up build \"${WORKSPACE}\" dir"
                 deleteDir()
+        
+                // Clean the @tmp directory if it exists
+                sh """
+                    if [[ -d "${WORKSPACE}@tmp" ]]; then
+                        echo "Cleaning up dangling \"${WORKSPACE}@tmp\" dir"
+                        rm -rf "${WORKSPACE}@tmp"
+                    fi
+                """
             }
         }
     }
