@@ -29,7 +29,17 @@ def buildAndTestProtocolParser() {
     """
 }
 
-def call() {
+// `Map config` lets us pass an optional parameter from upstream Jenkinsfiles to individually tweak build behavior if necessary
+def call(Map config = [:]) {
+
+    // Parsitects on Saturday, CISA on Sunday
+    def cronSchedule
+    if (env.JOB_NAME.contains('parsitects')) {
+        cronSchedule = config.cronSchedule ?: 'H H(8-17) * * 6'  // Spread Parsitects builds between 8am and 5pm on Saturday
+    } else {
+        cronSchedule = config.cronSchedule ?: 'H H(8-17) * * 7'  // Spread CISA builds between 8am and 5pm on Sunday
+    }
+
     pipeline {
         agent {
             label 'rhel9'
@@ -39,12 +49,19 @@ def call() {
             skipDefaultCheckout()
         }
 
+        // Schedule weekly builds using the cronSchedule above
+        triggers {
+            cron(cronSchedule)
+        }
+
         stages {
             stage('Discover Versions') {
                 steps {
                     script {
                         withCredentials([string(credentialsId: 'jjrush-gh-pat', variable: 'CR_PAT')]) {
                             def versionsOutput = sh(
+                                // this script uses $CR_PAT auth token to query a specific upstream API for metadata related to currently published zeek versions that we have containerized
+                                // it then collects the largets major and largest corresponding minor versions from the list available (aka the two currently supported LTS versions)
                                 script: """
                                     curl -s -H "Accept: application/vnd.github+json" \
                                         -H "Authorization: Bearer \$CR_PAT" \
