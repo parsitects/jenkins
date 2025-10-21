@@ -36,6 +36,8 @@ def call(Map config = [:]) {
     def cronSchedule
     if (env.JOB_NAME.contains('parsitects')) {
         cronSchedule = config.cronSchedule ?: '*/10 * * * *'  // Every 10 minutes - TEST ONLY
+    } else {
+        cronSchedule = config.cronSchedule ?: '*/10 * * * *'  // Every 10 minutes - TEST ONLY
     }
     // if (env.JOB_NAME.contains('parsitects')) {
     //     cronSchedule = config.cronSchedule ?: 'H H(8-17) * * 6'  // Spread Parsitects builds between 8am and 5pm on Saturday
