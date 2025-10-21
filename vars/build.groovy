@@ -35,15 +35,10 @@ def call(Map config = [:]) {
     // Parsitects on Saturday, CISA on Sunday
     def cronSchedule
     if (env.JOB_NAME.contains('parsitects')) {
-        cronSchedule = config.cronSchedule ?: '*/10 * * * *'  // Every 10 minutes - TEST ONLY
+        cronSchedule = config.cronSchedule ?: 'H H(8-17) * * 6'  // Spread Parsitects builds between 8am and 5pm on Saturday
     } else {
-        cronSchedule = config.cronSchedule ?: '*/10 * * * *'  // Every 10 minutes - TEST ONLY
+        cronSchedule = config.cronSchedule ?: 'H H(8-17) * * 7'  // Spread CISA builds between 8am and 5pm on Sunday
     }
-    // if (env.JOB_NAME.contains('parsitects')) {
-    //     cronSchedule = config.cronSchedule ?: 'H H(8-17) * * 6'  // Spread Parsitects builds between 8am and 5pm on Saturday
-    // } else {
-    //     cronSchedule = config.cronSchedule ?: 'H H(8-17) * * 7'  // Spread CISA builds between 8am and 5pm on Sunday
-    // }
 
     pipeline {
         agent {
