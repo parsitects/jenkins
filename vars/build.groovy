@@ -105,7 +105,20 @@ def call(Map config = [:]) {
                         versions.each { version ->
                             compilers.each { compiler ->
                                 def tag = version == 'latest' ? "${version}-${compiler}" : "v${version}-${compiler}"
-                                sh "docker pull ghcr.io/mmguero/zeek:${tag}"
+                                def fullImage = "ghcr.io/mmguero/zeek:${tag}"
+
+                                // Check if image exists locally
+                                def imageExists = sh(
+                                    script: "docker images --format '{{.Repository}}:{{.Tag}}' | grep -Fx '${fullImage}'",
+                                    returnStatus: true
+                                ) == 0
+
+                                if (imageExists) {
+                                    echo "Image already exists locally: ${fullImage}"
+                                } else {
+                                    echo "Pulling image: ${fullImage}"
+                                    sh "docker pull ${fullImage}"
+                                }
                             }
                         }
                     }
@@ -162,7 +175,7 @@ def call(Map config = [:]) {
                                         docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
                                             dir(variant) {
                                                 checkout scm
-                                                // buildAndTestProtocolParser()
+                                                buildAndTestProtocolParser()
                                             }
                                         }
                                     }
