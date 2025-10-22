@@ -178,15 +178,17 @@ def call(Map config = [:]) {
         
         post {
             always {
-                // Store the workspace path before deleteDir() changes context
-                def workspacePath = env.WORKSPACE
+                script {
+                    // Store the workspace path before deleteDir() changes context
+                    def workspacePath = env.WORKSPACE
 
-                // Clean up Jenkins job directories
-                deleteDir()
-
-                // Clean up the @tmp directory that Jenkins creates alongside the workspace
-                dir("${workspacePath}@tmp") {
+                    // Clean up Jenkins job directories
                     deleteDir()
+
+                    // Clean up the @tmp directory that Jenkins creates alongside the workspace
+                    dir("${workspacePath}@tmp") {
+                        deleteDir()
+                    }
                 }
             }
         }
