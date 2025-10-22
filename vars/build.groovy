@@ -180,6 +180,11 @@ def call(Map config = [:]) {
             always {
                 // Clean up Jenkins job directories
                 deleteDir()
+
+                // Clean up the @tmp directory that Jenkins creates alongside the workspace
+                dir("${env.WORKSPACE}@tmp") {
+                    deleteDir()
+                }
             }
         }
     }
