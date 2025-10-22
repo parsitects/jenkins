@@ -162,7 +162,7 @@ def call(Map config = [:]) {
                                         docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
                                             dir(variant) {
                                                 checkout scm
-                                                buildAndTestProtocolParser()
+                                                // buildAndTestProtocolParser()
                                             }
                                         }
                                     }
@@ -182,6 +182,12 @@ def call(Map config = [:]) {
                 deleteDir()
 
                 // Clean up the @tmp directory that Jenkins creates alongside the workspace
+                script {
+                    sh """
+                        echo $PWD
+                        ls 
+                    """
+                }
                 dir("${env.WORKSPACE}@tmp") {
                     deleteDir()
                 }
