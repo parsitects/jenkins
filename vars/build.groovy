@@ -30,7 +30,7 @@ def buildAndTestProtocolParser() {
 
             # Verify the parser is available in zeek -NN
             # Extract protocol name from git repository name (e.g., icsnpp-c1222 -> C1222)
-            REPO_NAME=\$(git config --get remote.origin.url | sed -E 's#.*/([^/]+)/?$#\1#' | sed 's/\\.git$//')
+            REPO_NAME=\$(git config --get remote.origin.url | sed -E 's#.*/([^/]+)/?\$#\\1#' | sed 's/\\.git\$//')
             PROTOCOL_NAME=\$(echo "\$REPO_NAME" | sed 's/^icsnpp-//' | tr '[:lower:]-' '[:upper:]_')
 
             echo "Checking for ANALYZER_\${PROTOCOL_NAME} in zeek -NN output..."
