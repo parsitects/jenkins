@@ -201,7 +201,12 @@ def call(Map config = [:]) {
         
         post {
             always {
+                recordIssues(
+                    tools: [gcc(), clang()],
+                    qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]  // optional
+                )
                 script {
+
                     // Store the workspace path before deleteDir() changes context
                     def workspacePath = env.WORKSPACE
 
