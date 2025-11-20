@@ -24,27 +24,15 @@ def buildAndTestProtocolParser() {
                 ;;
             esac
 
-            # Test zkg installation
-            echo "Testing zkg install..."
-            zkg install --force .
-
-            # Verify the parser is available in zeek -NN
-            # Extract protocol name from git repository name (e.g., icsnpp-c1222 -> C1222)
-            REPO_NAME=\$(git config --get remote.origin.url | sed -E 's#.*/([^/]+)/?\$#\\1#' | sed 's/\\.git\$//')
-            PROTOCOL_NAME=\$(echo "\$REPO_NAME" | sed 's/^icsnpp-//' | tr '[:lower:]-' '[:upper:]_')
-
-            echo "Checking for ANALYZER_\${PROTOCOL_NAME} in zeek -NN output..."
-            if zeek -NN | grep -q "ANALYZER_\${PROTOCOL_NAME}"; then
-                echo "zkg install test passed - parser found in zeek -NN"
-            else
-                echo "ERROR: Parser ANALYZER_\${PROTOCOL_NAME} not found in zeek -NN output"
-                echo "Full zeek -NN output:"
-                zeek -NN
-                exit 1
-            fi
-
+            # Run btest first to fail early if tests don't pass
             cd testing
             btest -d
+            cd ..
+
+            # Install with zkg to verify the zeek/zkg machinery works
+            # (this will run btest again internally along with availability.zeek checks)
+            echo "Testing zkg install..."
+            zkg install --force .
     """
 }
 
