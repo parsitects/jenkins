@@ -189,7 +189,7 @@ def call(Map config = [:]) {
                                     def variant = "${version}-${compiler}"
                                     
                                     compilerStages[compiler] = {
-                                        docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
+                                        docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--entrypoint=') {
                                             dir(variant) {
                                                 checkout scm
                                                 buildAndTestProtocolParser()
