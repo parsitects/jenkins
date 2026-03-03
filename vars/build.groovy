@@ -189,10 +189,12 @@ def call(Map config = [:]) {
                                     def variant = "${version}-${compiler}"
                                     
                                     compilerStages[compiler] = {
-                                        docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--entrypoint=') {
+                                        docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
                                             dir(variant) {
                                                 checkout scm
                                                 buildAndTestProtocolParser()
+                                                // Fix root-owned files so Jenkins can clean up the workspace later
+                                                sh 'chown -R $(stat -c %u:%g ..) .'
                                             }
                                         }
                                     }
