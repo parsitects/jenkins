@@ -6,7 +6,7 @@
 **Key Concepts**
 - Shared Library Entry: The pipeline logic is defined in `vars/build.groovy` and is consumed by a project Jenkinsfile via a `@Library('CISAGOV Jenkins@master')` reference, calling the `build()` step.
 - Agent: Runs on nodes labeled `rhel9` and uses Docker to run containerized build/test steps.
-- Dynamic Version Discovery: Queries the GitHub Container Registry API to discover the two most recent LTS versions of Zeek (e.g., 7.0.x and 8.0.x), plus 'latest'.
+- Dynamic Version Discovery: Queries every page of the GitHub Container Registry API and discovers the newest releases from the two highest available Zeek LTS (`x.0.x`) major lines that provide both GCC and Clang images, plus `latest` with both compiler variants.
 - Parallelization: For each Zeek version, builds and tests run in parallel across both clang and gcc compilers.
 - Combined Build/Test: Each variant performs checkout, build, and test in a single stage without stashing artifacts between stages.
 
@@ -31,8 +31,10 @@
 
 - Stage: Discover Versions
   - Uses GitHub API to query the ghcr.io/mmguero/zeek container registry for available versions.
-  - Identifies the two most recent LTS versions (e.g., finds all x.0.y releases, groups by major version, takes the latest patch from the top two major versions).
-  - Prepends 'latest' to the list, resulting in something like: `latest,8.0.1,7.0.10`.
+  - Reads every package-version page so older LTS images are not hidden by API pagination.
+  - Requires both `latest-gcc` and `latest-clang`, and considers only versioned releases that provide both `-gcc` and `-clang` image tags.
+  - Finds all `x.0.y` releases, groups them by major version, and takes the latest patch from the two highest available LTS major lines. It does not assume that both the highest major and the immediately preceding major are present.
+  - Prepends `latest` to the list, resulting in something like: `latest,9.0.0,8.0.10`.
   - Stores the result in `env.ZEEK_VERSIONS` for use in subsequent stages.
 
 - Stage: Pull Docker Images

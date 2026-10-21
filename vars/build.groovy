@@ -77,31 +77,73 @@ def call(Map config = [:]) {
                     script {
                         withCredentials([string(credentialsId: 'jjrush-gh-pat', variable: 'CR_PAT')]) {
                             def versionsOutput = sh(
-                                // this script uses $CR_PAT auth token to query a specific upstream API for metadata related to currently published zeek versions that we have containerized
-                                // it then collects the largets major and largest corresponding minor versions from the list available (aka the two currently supported LTS versions)
-                                script: """
-                                    curl -s -H "Accept: application/vnd.github+json" \
-                                        -H "Authorization: Bearer \$CR_PAT" \
-                                        https://api.github.com/users/mmguero/packages/container/zeek/versions | \
-                                    jq -r '.[].metadata.container.tags[]' | \
-                                    grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | \
-                                    sed 's/^v//' | \
-                                    sort -V -u | \
-                                    {
-                                        readarray -t VERS;
-                                        M=\$(printf '%s\\n' "\${VERS[@]}" | awk -F. '{print \$1}' | sort -n | tail -1);
-                                        for B in "\$M" \$((M-1)); do
-                                            printf '%s\\n' "\${VERS[@]}" | grep -E "^\${B}\\.0\\.[0-9]+\$" | sort -V | tail -1;
-                                        done | sed '/^\$/d';
-                                    }
-                                """,
+                                // Query every package-version page, keep versions that have
+                                // both compiler images, and select the newest release from the
+                                // two highest available LTS (x.0.x) major lines.
+                                script: '''
+                                    set -euo pipefail
+
+                                    TAGS_FILE=$(mktemp)
+                                    trap 'rm -f "$TAGS_FILE"' EXIT
+
+                                    PAGE=1
+                                    while true; do
+                                        RESPONSE=$(curl -fsS \
+                                            -H "Accept: application/vnd.github+json" \
+                                            -H "Authorization: Bearer $CR_PAT" \
+                                            "https://api.github.com/users/mmguero/packages/container/zeek/versions?per_page=100&page=${PAGE}")
+
+                                        printf '%s' "$RESPONSE" | jq -e 'type == "array"' >/dev/null
+                                        COUNT=$(printf '%s' "$RESPONSE" | jq 'length')
+
+                                        if [ "$COUNT" -eq 0 ]; then
+                                            break
+                                        fi
+
+                                        printf '%s' "$RESPONSE" | jq -r '.[].metadata.container.tags[]?' >> "$TAGS_FILE"
+
+                                        if [ "$COUNT" -lt 100 ]; then
+                                            break
+                                        fi
+
+                                        PAGE=$((PAGE + 1))
+                                    done
+
+                                    echo "Discovered container tags:" >&2
+                                    sort -V -u "$TAGS_FILE" >&2
+
+                                    for REQUIRED_TAG in latest-gcc latest-clang; do
+                                        if ! grep -Fxq "$REQUIRED_TAG" "$TAGS_FILE"; then
+                                            echo "Required container tag is missing: $REQUIRED_TAG" >&2
+                                            exit 1
+                                        fi
+                                    done
+
+                                    COMPLETE_VERSIONS=$(
+                                        sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-(gcc|clang)$/\1/p' "$TAGS_FILE" |
+                                        sort -V -u |
+                                        while IFS= read -r VERSION; do
+                                            if grep -Fxq "v${VERSION}-gcc" "$TAGS_FILE" &&
+                                               grep -Fxq "v${VERSION}-clang" "$TAGS_FILE"; then
+                                                printf '%s\n' "$VERSION"
+                                            fi
+                                        done
+                                    )
+
+                                    echo "Versions with both GCC and Clang images:" >&2
+                                    printf '%s\n' "$COMPLETE_VERSIONS" >&2
+
+                                    printf '%s\n' "$COMPLETE_VERSIONS" |
+                                        sort -Vr |
+                                        awk -F. '$2 == 0 && !seen[$1]++ && selected < 2 { print; selected++ }'
+                                ''',
                                 returnStdout: true
                             ).trim()
                             
                             def ltsVersions = versionsOutput ? versionsOutput.split('\n').findAll { it } : []
                             
                             if (ltsVersions.size() < 2) {
-                                error("Expected 2 LTS versions but got: ${ltsVersions}")
+                                error("Expected 2 complete LTS versions with GCC and Clang images but got: ${ltsVersions}")
                             }
                             
                             // Add 'latest' to the beginning
