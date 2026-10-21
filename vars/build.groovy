@@ -120,20 +120,20 @@ def call(Map config = [:]) {
                                     done
 
                                     COMPLETE_VERSIONS=$(
-                                        sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+)-(gcc|clang)$/\1/p' "$TAGS_FILE" |
+                                        sed -nE 's/^v([0-9]+\\.[0-9]+\\.[0-9]+)-(gcc|clang)$/\\1/p' "$TAGS_FILE" |
                                         sort -V -u |
                                         while IFS= read -r VERSION; do
                                             if grep -Fxq "v${VERSION}-gcc" "$TAGS_FILE" &&
                                                grep -Fxq "v${VERSION}-clang" "$TAGS_FILE"; then
-                                                printf '%s\n' "$VERSION"
+                                                printf '%s\\n' "$VERSION"
                                             fi
                                         done
                                     )
 
                                     echo "Versions with both GCC and Clang images:" >&2
-                                    printf '%s\n' "$COMPLETE_VERSIONS" >&2
+                                    printf '%s\\n' "$COMPLETE_VERSIONS" >&2
 
-                                    printf '%s\n' "$COMPLETE_VERSIONS" |
+                                    printf '%s\\n' "$COMPLETE_VERSIONS" |
                                         sort -Vr |
                                         awk -F. '$2 == 0 && !seen[$1]++ && selected < 2 { print; selected++ }'
                                 ''',
