@@ -1,6 +1,15 @@
 def buildAndTestProtocolParser(Map config = [:]) {
     def buildJobs = config.get('buildJobs', 2)
     def spicyJobs = config.get('spicyJobs', 2)
+    def runZkgInstall = config.get('runZkgInstall', true)
+    def zkgStep = runZkgInstall ? '''
+            # Install with zkg to verify the zeek/zkg machinery works.
+            # This runs the package's tests again in a clean staging directory.
+            echo "Testing zkg install..."
+            zkg install --force .
+    ''' : '''
+            echo "Skipping duplicate zkg validation for this compiler."
+    '''
 
     sh """
         set -ex
@@ -33,10 +42,7 @@ def buildAndTestProtocolParser(Map config = [:]) {
             btest -d
             cd ..
 
-            # Install with zkg to verify the zeek/zkg machinery works
-            # (this will run btest again internally along with availability.zeek checks)
-            echo "Testing zkg install..."
-            zkg install --force .
+            ${zkgStep}
     """
 }
 
@@ -47,6 +53,7 @@ def call(Map config = [:]) {
     def spicyJobs = config.get('spicyJobs', 2)
     def parallelCompilers = config.get('parallelCompilers', true)
     def useCgroupfs = config.get('useCgroupfs', false)
+    def zkgCompilers = config.get('zkgCompilers', ['clang', 'gcc'])
 
     if (!(buildJobs instanceof Integer) || buildJobs < 1) {
         error('buildJobs must be a positive integer')
@@ -62,6 +69,12 @@ def call(Map config = [:]) {
 
     if (!(useCgroupfs instanceof Boolean)) {
         error('useCgroupfs must be a boolean')
+    }
+
+    if (!(zkgCompilers instanceof List) ||
+        zkgCompilers.any { !(it in ['clang', 'gcc']) } ||
+        zkgCompilers.toSet().size() != zkgCompilers.size()) {
+        error('zkgCompilers must contain unique compiler names from: clang, gcc')
     }
 
     // Parsitects on Saturday, CISA on Sunday
@@ -273,7 +286,8 @@ def call(Map config = [:]) {
                                                     checkout scm
                                                     buildAndTestProtocolParser(
                                                         buildJobs: buildJobs,
-                                                        spicyJobs: spicyJobs
+                                                        spicyJobs: spicyJobs,
+                                                        runZkgInstall: zkgCompilers.contains(compiler)
                                                     )
                                                     // Fix root-owned files so Jenkins can clean up the workspace later
                                                     sh 'chown -R $(stat -c %u:%g ..) .'
