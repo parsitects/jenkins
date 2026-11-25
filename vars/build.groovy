@@ -1,4 +1,16 @@
-def buildAndTestProtocolParser() {
+def buildAndTestProtocolParser(Map config = [:]) {
+    def buildJobs = config.get('buildJobs', 2)
+    def spicyJobs = config.get('spicyJobs', 2)
+    def runZkgInstall = config.get('runZkgInstall', true)
+    def zkgStep = runZkgInstall ? '''
+            # Install with zkg to verify the zeek/zkg machinery works.
+            # This runs the package's tests again in a clean staging directory.
+            echo "Testing zkg install..."
+            zkg install --force .
+    ''' : '''
+            echo "Skipping duplicate zkg validation for this compiler."
+    '''
+
     sh """
         set -ex
         rm -rf build testing/.tmp testing/.btest.failed.dat
@@ -16,7 +28,8 @@ def buildAndTestProtocolParser() {
                 mkdir -p build
                 cd build
                 cmake ..
-                cmake --build . -j 2
+                export HILTI_JIT_PARALLELISM=${spicyJobs}
+                cmake --build . --parallel ${buildJobs}
                 cd ..
                 ;;
             ZEEKONLY)
@@ -29,15 +42,40 @@ def buildAndTestProtocolParser() {
             btest -d
             cd ..
 
-            # Install with zkg to verify the zeek/zkg machinery works
-            # (this will run btest again internally along with availability.zeek checks)
-            echo "Testing zkg install..."
-            zkg install --force .
+            ${zkgStep}
     """
 }
 
 // `Map config` lets us pass an optional parameter from upstream Jenkinsfiles to individually tweak build behavior if necessary
 def call(Map config = [:]) {
+
+    def buildJobs = config.get('buildJobs', 2)
+    def spicyJobs = config.get('spicyJobs', 2)
+    def parallelCompilers = config.get('parallelCompilers', true)
+    def useCgroupfs = config.get('useCgroupfs', false)
+    def zkgCompilers = config.get('zkgCompilers', ['clang', 'gcc'])
+
+    if (!(buildJobs instanceof Integer) || buildJobs < 1) {
+        error('buildJobs must be a positive integer')
+    }
+
+    if (!(spicyJobs instanceof Integer) || spicyJobs < 1) {
+        error('spicyJobs must be a positive integer')
+    }
+
+    if (!(parallelCompilers instanceof Boolean)) {
+        error('parallelCompilers must be a boolean')
+    }
+
+    if (!(useCgroupfs instanceof Boolean)) {
+        error('useCgroupfs must be a boolean')
+    }
+
+    if (!(zkgCompilers instanceof List) ||
+        zkgCompilers.any { !(it in ['clang', 'gcc']) } ||
+        zkgCompilers.toSet().size() != zkgCompilers.size()) {
+        error('zkgCompilers must contain unique compiler names from: clang, gcc')
+    }
 
     // Parsitects on Saturday, CISA on Sunday
     def cronSchedule
@@ -82,6 +120,7 @@ def call(Map config = [:]) {
                                 // two highest available LTS (x.0.x) major lines.
                                 script: '''
                                     set -euo pipefail
+                                    set +x
 
                                     TAGS_FILE=$(mktemp)
                                     trap 'rm -f "$TAGS_FILE"' EXIT
@@ -221,6 +260,16 @@ def call(Map config = [:]) {
                     script {
                         def versions = env.ZEEK_VERSIONS.split(',')
                         def compilers = ['clang', 'gcc']
+                        def containerEnvironment = []
+
+                        if (useCgroupfs) {
+                            def containersConfig = "${pwd()}/.jenkins-containers.conf"
+                            writeFile(
+                                file: containersConfig,
+                                text: '[engine]\ncgroup_manager = "cgroupfs"\n'
+                            )
+                            containerEnvironment << "CONTAINERS_CONF_OVERRIDE=${containersConfig}"
+                        }
                         
                         versions.each { version ->
                             stage("Build & Test Zeek ${version}") {
@@ -231,18 +280,32 @@ def call(Map config = [:]) {
                                     def variant = "${version}-${compiler}"
                                     
                                     compilerStages[compiler] = {
-                                        docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
-                                            dir(variant) {
-                                                checkout scm
-                                                buildAndTestProtocolParser()
-                                                // Fix root-owned files so Jenkins can clean up the workspace later
-                                                sh 'chown -R $(stat -c %u:%g ..) .'
+                                        withEnv(containerEnvironment) {
+                                            docker.image("ghcr.io/mmguero/zeek:${tag}").inside('--user root --entrypoint=') {
+                                                dir(variant) {
+                                                    checkout scm
+                                                    buildAndTestProtocolParser(
+                                                        buildJobs: buildJobs,
+                                                        spicyJobs: spicyJobs,
+                                                        runZkgInstall: zkgCompilers.contains(compiler)
+                                                    )
+                                                    // Fix root-owned files so Jenkins can clean up the workspace later
+                                                    sh 'chown -R $(stat -c %u:%g ..) .'
+                                                }
                                             }
                                         }
                                     }
                                 }
                                 
-                                parallel compilerStages
+                                if (parallelCompilers) {
+                                    parallel compilerStages
+                                } else {
+                                    compilerStages.each { compiler, compilerStage ->
+                                        stage("Compiler: ${compiler}") {
+                                            compilerStage.call()
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

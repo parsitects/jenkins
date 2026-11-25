@@ -69,6 +69,7 @@
       - For SPICY: runs `cmake` and `cmake --build` with 2 parallel jobs
       - For ZEEKONLY: skips build step entirely
       - Runs `btest -d` in the testing/ directory
+      - Runs clean `zkg` validation for compilers selected by `zkgCompilers`
 
 - Post: Declarative Post Actions
   - Always runs after the pipeline completes:
